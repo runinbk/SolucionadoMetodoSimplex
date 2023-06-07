@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Solucionador del método simplex</title>
+        <!-- Used for fraction handling -->
+        <script src="https://unpkg.com/mathjs@7.5.1/dist/math.min.js"></script>
+        <!-- Used for formula formatting-->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+        <script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js" integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4" crossorigin="anonymous"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js" integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
+        onload="renderMathInElement(document.body);"></script>
+        <!-- My scripts for solving the problem-->
+        <script src="simplex.js"></script>
+        <script src="readInputs.js"></script>
+        <script src="tabulate.js"></script>
+        <script src="find.js"></script>
+        <script src="matrixOps.js"></script>
+        <script src="readMatrices.js"></script>
+        <script src="optimality.js"></script>
+        <script src="findPivots.js"></script>
+        <script src="calcEntries.js"></script>
+        <script src="globals.js"></script>
+        <script src="fractions.js"></script>
+        <script src="sensAnalysis.js"></script>
+        <script src="showSolution.js"></script>
+        <script src="miscellaneous.js"></script>
+        <script src="nConstr.js"></script>
+        <script src="BB.js"></script>
+        <script src="eqns.js"></script>
+        <script src="alternateSoln.js"></script>
+        <script src="permDegn.js"></script>
+        <script src="readNonMat.js"></script>
+        <script src="timing.js"></script>
+        <script src="constrCoeffChg.js"></script>
+        <link rel="icon" href="https://fusion809.github.io/assets/favicon.png">
+    </head>
+
+    <body onload="renderEqns()">
+        <h1>Solucionador del método simplex <a href="https://github.com/fusion809/simplex" link="_blank"><img src="https://github.githubassets.com/favicons/favicon.svg"/></a></h1>
+        
+        <div>
+            This webpage essentially just solves a specified linear programme using the simplex method and shows full working. The problem can either be provided in canonical matrix form (with slack variables), or non-matrix form.
+
+        </div>
+
+        <h2 id="mat">Matrix form</h2>
+        <div>
+            Canonical matrix form is:
+
+            <div id="eqn1"></div>
+
+            The various matrices can be entered in using MATLAB notation. In the case of \(A\), semicolons are used to separate rows and commas or spaces to separate individual row elements. \(\mathbf{b}\), \(\mathbf{c}\), \(\mathbf{x}\) and \(x_{\mathbf{B}}\) can have individual elements separated by commas, semicolons or spaces.
+        </div>
+
+        <h2 id = "nonMat">Non-matrix form</h2>
+        <div>
+            Problems can also be entered in the more usual format in the final textbox in this webpage. If you wish to do so, you must check the circle next to "Use non-matrix format?" before pressing "Click to solve problem". If you are solving a dual problem, want this fact mentioned in the article body, and you want different dual variable names to be used, click the "Solving a dual?" button.<br/><br/>
+            
+            In the textbox, >= or &geq; is used to denote "greater than or equal to", <= or &leq; to denote "less than or equal to" and = to denote equal to.<br/><br/>
+            
+            "Maximize", "Maximise" or "Max" (case-insensitive) can be used to indicate the problem is a maximization problem, whilst "Minimize", "Minimise" or "Min" (case-insensitive) can be used to indicate it is a minimization problem.<br/><br/> 
+            
+            Non-negativity constraints are assumed (and do <b>not</b> need to be specified).<br/><br/>
+
+            You can include the phrase "Subject to" or "st." (with or without a colon) on a new line before specifying your structural constraints, but you do <b>not</b> need to.<br/><br/>
+
+            Commas and dots cannot be used to as thousands delimiters. A dot is used to indicate the decimal place.<br/><br/>
+            
+            Fraction coefficients must appear <b>before</b> the variable that they pertain to. For example:
+
+            <pre>
+                5/6x1
+            </pre>
+
+            is OK, as is <code>5/6 x1</code>, but:
+
+            <pre>
+                5x1/6
+            </pre>
+
+            will not be read correctly.<br/><br/>
+
+            All decision variables <b>must</b> appear in the objective function, even if they are just multiplied by 0. In constraints, not all decision variables need to appear.
+        </div>
+
+        <h2>Sensitivity analysis</h2>
+        <div>
+            For this webpage, sensitivity analysis always uses the input within the matrix section of the form. It assumes the objective function is called "z" and that the aim is to maximize it, so if your initial problem was a minimization problem you should multiply any result it provides by -1 to return your answer to its proper sign.
+        </div>
+        
+        <h3>Add constraint(s)</h3>
+        <div>
+            To add new constraint(s) to the problem after first solving it, you must replace the entry for \(A\) with the new row(s) for \(A\) corresponding to these new constraint(s). You must also replace \(\mathbf{b}\) with the new entry(s) to be added to the problem. Then finally click the circle next to "<b>Add constraint(s)?</b>" and click the "Click to solve problem" button.
+        </div>
+        <h3>Add variable(s)</h3>
+        <div>
+            To add new variable(s) to the problem after the original problem has been solved, just replace \(A\), \(\mathbf{b}\), \(\mathbf{c}\) and \(\mathbf{x}\) with what is to be added to them, then click the circle next to "<b>New variable(s)?</b>" and press "Click to solve problem" button.
+        </div>
+        <h3>Change constraint coefficient(s)</h3>
+        <div>
+            To change the constraint coefficient(s) after the solver has solved the original problem, just change the relevant entries in \(\mathbf{A}\) (remembering that sensitivity analysis can only be performed for coefficients of non-basic variables), then click the circle next to "<b>Constraint LHS change?</b>" and click the "Click to solve problem" button.
+        </div>
+        <h3>Change objective function coefficient(s)</h3>
+        <div>
+            To change objective function coefficient(s) after the solver has solved the original problem, just change the relevant entries in \(\mathbf{c}\), click the circle to the left of "<b>Change objective function coefficient(s)?</b>" and click the "Click to solve problem" button.
+        </div>
+        <h3>Resource change</h3>
+        <div>
+            To change resource value(s) (\(\mathbf{b}\) values) after the solver has solved the original problem, merely change the relevant entries in \(\mathbf{b}\), click the circle next to "<b>Resource change?</b>" and click the "Click to solve problem" button.
+        </div>
+
+        <h2>Default example</h2>
+        <div>
+            This webpage uses the following default example:
+
+            <div id="eqn2"></div>
+            
+            to illustrate how problems should be entered into both forms. 
+        </div>
+
+        <form>
+            <table width="100%">
+            <tr>
+                <th colspan=2>Canonical matrix form</th>
+            </tr>
+            <tr>
+                <th>Input</th>
+                <th width="100%">Contents</th>
+            </tr> 
+            <tr width="100%">
+                <td>\(A\)</td>
+                <td width="100%">
+                    <textarea id="A" name="A" style="width: 100%; height: 100px;">
+[-3 -5 -4 1 0 0 0 0;
+-5 -4 -3 0 1 0 0 0;
+2 1 2 0 0 1 0 0;
+1 1 1 0 0 0 1 0;
+-1 -1 -1 0 0 0 0 1]</textarea></td>
+            </tr>
+            <tr>
+                <td>\(\mathbf{b}\)</td>
+                <td width="100%">
+                    <textarea id="b" name="b" style="width: 100%; height: 100px;">
+[-2500;
+-4800;
+3500;
+2000;
+-2000]</textarea>
+                </td>
+            </tr>
+            <tr>
+                <td>\(\mathbf{c}\)</td>
+                <td>
+                    <textarea id="c" name="c" style="width: 100%">
+[-200 -350 -200 0 0 0 0 0]</textarea>
+                </td>
+            </tr>
+            <tr>
+                <td>\(\mathbf{x}\)</td>
+                <td><textarea id="x" name="x" style="width: 100%">[x1 x2 x3 s1 s2 s3 s4 s5]</textarea></td>
+            </tr>
+            <tr>
+                <td>\(x_\mathbf{B}\)</td>
+                <td>
+                    <textarea id="xB" name="xB" style="width: 100%; height: 30px;">[s1 s2 s3 s4 s5]</textarea>
+</td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <b>Sensitivity analysis:</b><br/>
+                    <input type="radio" id="changec">Change objective function coefficient(s)?</input>
+                    <input type="radio" id="newConstr">Add constraint(s)?</input> (<input type="radio" id="newcRows">New non-zero c entries?</input>)
+                    <input type="radio" id="rscChg">Resource change?</input>
+                    <input type="radio" id="LHSChg">Constraint LHS change?</input>
+                    <input type="radio" id="newVar">New variable(s)?</input>
+                </td>
+                </tr>
+                <tr>
+                    <th colspan="2">Non-matrix form</th>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <textarea id="nonMatForm" style="width: 100%; height: 200px;">
+Minimize G = 200x1 + 350x2 + 200x3
+Subject to:
+3x1 + 5x2 + 4x3 ≥ 2500
+5x1 + 4x2 + 3x3 ≥ 4800
+2x1 + x2 + 2x3 ≤ 3500
+x1 + x2 + x3 = 2000</textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="100%" colspan="2">
+                        <input type="radio" id="useNonMat">
+                            Use non-matrix format?
+                        </input>
+                        <input type="radio" id="isDual">
+                            Solving a dual?
+                        </input>
+                    </td>
+                </tr>
+            </table>
+        </form>
+        <button onclick="solveProblem()">Click to solve problem</button>
+        <button onclick="removeTableaux()">Remove tableaux</button>
+        <div id = "tableau">
+        </div>
+        <style>
+            table, tr, th, td {
+                border: 1px solid black;
+                border-collapse: collapse;
+                margin: 3px;
+                padding: 3px;
+                max-width: 95%;
+            }
+            h1 {
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </body>
+</html>
